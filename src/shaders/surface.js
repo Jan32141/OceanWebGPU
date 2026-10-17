@@ -27,7 +27,7 @@ const TEX_SIZE : f32 = 256.0;
 
 // Waves lose height in shallow water; keep a little motion right up to the beach.
 fn shoreAttenuation(depth : f32) -> f32 {
-  return mix(0.12, 1.0, smoothstep(0.0, 18.0, depth));
+  return mix(0.35, 1.0, smoothstep(0.0, 8.0, depth));
 }
 
 struct VOut {
@@ -133,8 +133,8 @@ fn fs(v : VOut) -> @location(0) vec4f {
   let sss = sunE * sssColor * (0.9 * crest * backlit + 0.015 * pow(nv, 2.0));
   var body = deep * (amb + sunE * nl * 0.05) + sss;
   // Shallow water: the sandy bottom shows through as turquoise.
-  let shallow = vec3f(0.07, 0.21, 0.19) * (amb + sunE * max(L.y, 0.0) * 0.35) * 0.35;
-  body = mix(shallow, body, smoothstep(0.0, 9.0, depth));
+  let shallow = vec3f(0.10, 0.30, 0.26) * (amb + sunE * max(L.y, 0.0) * 0.5);
+  body = mix(shallow, body, smoothstep(0.0, 5.0, depth));
 
   let F = fresnel(nv);
   var col = (1.0 - F) * body + F * refl + spec;

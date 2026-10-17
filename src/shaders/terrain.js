@@ -92,12 +92,18 @@ fn fs(v : VOut) -> @location(0) vec4f {
   let xz = world.xz;
   let h = world.y;
 
-  // Detail: perturb the normal with a noise gradient so slopes are not glassy.
+  // Detail normals. Kept subtle: with a grazing sunset sun, broad bumps read as dark blotches.
+  let dist = length(v.rel);
   let e = 0.6;
   let n0 = fbm(xz * 0.35, 3);
   let nx = fbm((xz + vec2f(e, 0.0)) * 0.35, 3);
   let nz = fbm((xz + vec2f(0.0, e)) * 0.35, 3);
-  var n = normalize(v.normal + vec3f(n0 - nx, 0.0, n0 - nz) * 1.2);
+  var n = v.normal + vec3f(n0 - nx, 0.0, n0 - nz) * 0.3;
+  // Wind ripples in the sand, faded out with distance to avoid aliasing.
+  let rippleFade = (1.0 - smoothstep(8.0, 45.0, dist)) * (1.0 - smoothstep(2.5, 5.0, h));
+  let rp = dot(xz, vec2f(0.8, 0.6)) * 7.0 + vnoise(xz * 0.8) * 5.0;
+  n += vec3f(0.8, 0.0, 0.6) * cos(rp) * 0.07 * rippleFade;
+  n = normalize(n);
   let slope = 1.0 - n.y;
 
   let broad = fbm(xz * 0.02, 3);
@@ -122,7 +128,6 @@ fn fs(v : VOut) -> @location(0) vec4f {
   let amb = cloudAmbient();
   var col = albedo / PI * sunE * nl + albedo * amb * (0.55 + 0.45 * n.y);
 
-  let dist = length(v.rel);
   let haze = 1.0 - exp(-dist / 42000.0);
   col = mix(col, skyAbove(-v.rel / dist), haze);
   return vec4f(col, 1.0);
