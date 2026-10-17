@@ -127,6 +127,8 @@ fn fs(v : VOut) -> @location(0) vec4f {
   let sunE = G.sunIntensity * sampleTransmittance(RG + max(h, 0.0) * 0.001 + 1e-5, L.y) * shadow;
   let amb = cloudAmbient();
   var col = albedo / PI * sunE * nl + albedo * amb * (0.55 + 0.45 * n.y);
+  // Seabed seen through shallow water: darker and tinted by absorption.
+  col *= mix(vec3f(1.0), vec3f(0.45, 0.72, 0.68), smoothstep(0.0, -2.5, h));
 
   let haze = 1.0 - exp(-dist / 42000.0);
   col = mix(col, skyAbove(-v.rel / dist), haze);

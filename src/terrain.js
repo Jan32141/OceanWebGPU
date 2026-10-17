@@ -68,8 +68,9 @@ function islandHeight(x, z) {
   let e = SEABED + s * 46 + Math.pow(s, 2.2) * peak * (0.45 + 0.75 * ridge);
   e += (fbm(x * 0.03, z * 0.03, 3) - 0.5) * 3 * Math.min(1, s * 3);
   // Flatten the band around sea level into beaches and shallow sand flats.
-  if (e > 0 && e < 10) e = 10 * (e / 10) ** 2;
-  else if (e <= 0 && e > -16) e = -16 * (-e / 16) ** 2;
+  // Gentler near sea level gives sandy beaches, but keep enough slope for a clean shoreline.
+  if (e > 0 && e < 8) e = 8 * (e / 8) ** 1.5;
+  else if (e <= 0 && e > -10) e = -10 * (-e / 10) ** 1.25;
   return e;
 }
 

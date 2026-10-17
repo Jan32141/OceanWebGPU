@@ -84,7 +84,20 @@ export class OceanSurface {
           },
         ],
       },
-      fragment: { module, entryPoint: 'fs', targets: [{ format: HDR_FORMAT }] },
+      fragment: {
+        module,
+        entryPoint: 'fs',
+        // Premultiplied alpha over the terrain, which is drawn first.
+        targets: [
+          {
+            format: HDR_FORMAT,
+            blend: {
+              color: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+              alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+            },
+          },
+        ],
+      },
       primitive: { topology: 'triangle-list', cullMode: 'none' },
       depthStencil: { format: DEPTH_FORMAT, depthCompare: 'greater', depthWriteEnabled: true },
     });

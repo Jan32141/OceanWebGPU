@@ -133,11 +133,15 @@ fn fs(v : VOut) -> @location(0) vec4f {
   let sss = sunE * sssColor * (0.9 * crest * backlit + 0.015 * pow(nv, 2.0));
   var body = deep * (amb + sunE * nl * 0.05) + sss;
   // Shallow water: the sandy bottom shows through as turquoise.
-  let shallow = vec3f(0.10, 0.30, 0.26) * (amb + sunE * max(L.y, 0.0) * 0.5);
-  body = mix(shallow, body, smoothstep(0.0, 5.0, depth));
+  let shallow = vec3f(0.06, 0.20, 0.18) * (amb + sunE * max(L.y, 0.0) * 0.5);
+  body = mix(shallow, body, smoothstep(0.0, 6.0, depth));
+  // Water is see-through where shallow so the seabed (drawn first) shows; fully opaque by ~7 m.
+  let opacity = min(1.0, (1.0 - exp(-depth * 0.6)) / 0.985);
 
   let F = fresnel(nv);
-  var col = (1.0 - F) * body + F * refl + spec;
+  // Premultiplied alpha: the seabed behind is weighted by (1 - alpha).
+  var col = (1.0 - F) * body * opacity + F * refl + spec;
+  var alphaOut = F + (1.0 - F) * opacity;
 
   // Whitecaps: Jacobian-driven coverage broken up by procedural detail.
   let fineNoise = fbm(v.xz * 0.9 + vec2f(G.time * 0.05, 0.0), 4);
@@ -145,17 +149,19 @@ fn fs(v : VOut) -> @location(0) vec4f {
   let detail = mix(fineNoise * 0.6 + coarseNoise * 0.4, 0.5, saturate(footprint * 0.4));
   let foamMask = saturate(foam * G.foamAmount);
   var coverage = saturate((foamMask - (1.0 - detail)) * 3.0 + foamMask * 0.15);
-  // Surf line: bands of foam rolling up the beach.
-  let surf = (1.0 - smoothstep(0.0, 1.8, depth)) * step(1e-3, depth);
-  let bands = 0.5 + 0.5 * sin(depth * 5.0 - G.time * 1.3 + fineNoise * 6.0);
-  coverage = max(coverage, saturate(surf * (bands * 0.8 + 0.3) * (fineNoise * 1.6 - 0.1)));
+  // Surf: a thin, soft band of foam right at the waterline that washes in and out.
+  let swash = 0.25 + 0.2 * sin(G.time * 0.9 + coarseNoise * 8.0);
+  let surf = smoothstep(0.0, 0.08, depth) * (1.0 - smoothstep(swash, swash + 0.5, depth));
+  coverage = max(coverage, surf * smoothstep(0.3, 0.6, coarseNoise * 0.6 + fineNoise * 0.6));
   let foamLit = vec3f(0.85) * (sunE * (nl * 0.6 + 0.4) / PI + amb);
   col = mix(col, foamLit, coverage);
+  alphaOut = mix(alphaOut, 1.0, coverage);
 
   // Aerial perspective toward the horizon.
   let haze = 1.0 - exp(-dist / 42000.0);
   col = mix(col, skyAbove(-V), haze);
+  alphaOut = mix(alphaOut, 1.0, haze);
 
-  return vec4f(col, 1.0);
+  return vec4f(col, alphaOut);
 }
 `;
