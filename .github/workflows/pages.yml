@@ -27,6 +27,11 @@ jobs:
         run: |
           mkdir _site
           cp -r index.html style.css src _site/
+          # Cache-bust: give every module URL the commit hash so browsers never mix old and new files.
+          v=${GITHUB_SHA::8}
+          sed -i "s#src/main.js#src/main.js?v=$v#; s#style.css#style.css?v=$v#" _site/index.html
+          find _site/src -name '*.js' -exec sed -i -E "s#(from '\./[^']+\.js)'#\1?v=$v'#g" {} +
+          grep -rn "?v=" _site | head -5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
