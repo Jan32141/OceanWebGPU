@@ -43,3 +43,8 @@ src/sky.js        atmosphere LUTs, environment map, background sky
 src/post.js       bloom + tonemap
 src/shaders/      WGSL sources
 ```
+
+## Deploy
+
+`.github/workflows/pages.yml` publishes the site to GitHub Pages on every push.
+In the repo, go to **Settings → Pages** and set **Source** to **GitHub Actions** (one-time setup).
