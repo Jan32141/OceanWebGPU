@@ -25,7 +25,7 @@ Then open the printed URL in a WebGPU browser (Chrome/Edge 113+, Safari 26+).
 
 | Input | Action |
 | --- | --- |
-| Drag | Look |
+| Click, then move mouse | Look (Esc frees the mouse; drag on touch screens) |
 | WASD / arrows | Move |
 | F | Toggle walk / fly |
 | Space | Jump (walk) / up (fly) |

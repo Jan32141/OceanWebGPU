@@ -19,26 +19,41 @@ export class FreeCamera {
     this.walking = true;
     this.onGround = false;
     this.onModeChange = null;
+    this.onLockChange = null;
 
-    let dragging = false;
+    const look = (dx, dy, scale) => {
+      this.yaw += dx * scale;
+      this.pitch = Math.max(-1.55, Math.min(1.55, this.pitch - dy * scale));
+    };
+    // Mouse: click to capture the pointer, then just move the mouse to look (Esc releases).
+    this.locked = false;
+    canvas.addEventListener('click', () => {
+      if (!this.locked && canvas.requestPointerLock) canvas.requestPointerLock();
+    });
+    document.addEventListener('pointerlockchange', () => {
+      this.locked = document.pointerLockElement === canvas;
+      this.onLockChange?.(this.locked);
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (this.locked) look(e.movementX, e.movementY, 0.0022);
+    });
+
+    // Touch: drag to look.
+    let touchId = null;
     let lastX = 0;
     let lastY = 0;
     canvas.addEventListener('pointerdown', (e) => {
-      dragging = true;
+      if (e.pointerType === 'mouse') return;
+      touchId = e.pointerId;
       lastX = e.clientX;
       lastY = e.clientY;
-      canvas.setPointerCapture(e.pointerId);
     });
     canvas.addEventListener('pointerup', (e) => {
-      dragging = false;
-      canvas.releasePointerCapture(e.pointerId);
+      if (e.pointerId === touchId) touchId = null;
     });
     canvas.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      const scale = this.fovY / canvas.clientHeight;
-      this.yaw += (e.clientX - lastX) * scale;
-      this.pitch -= (e.clientY - lastY) * scale;
-      this.pitch = Math.max(-1.55, Math.min(1.55, this.pitch));
+      if (e.pointerId !== touchId) return;
+      look(e.clientX - lastX, e.clientY - lastY, this.fovY / canvas.clientHeight);
       lastX = e.clientX;
       lastY = e.clientY;
     });

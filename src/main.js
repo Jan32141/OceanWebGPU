@@ -63,6 +63,8 @@ async function init() {
   const showMode = (walking) => (modeEl.textContent = walking ? 'walking' : 'flying');
   camera.onModeChange = showMode;
   showMode(camera.walking);
+  const lookHint = document.getElementById('lookhint');
+  camera.onLockChange = (locked) => (lookHint.textContent = locked ? 'Esc to free mouse' : 'click to look around');
   const groundAt = (x, z) => terrain.heightAt(x, z);
 
   const applySpectrum = (v) =>
