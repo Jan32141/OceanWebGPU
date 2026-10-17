@@ -46,7 +46,7 @@ function buildGrid(rings = 512, segments = 512, first = 0.06, radius = 40000, fa
 }
 
 export class OceanSurface {
-  constructor(device, sky, ocean, samplers) {
+  constructor(device, sky, ocean, terrain, samplers) {
     const { verts, indices } = buildGrid();
     this.vertexBuffer = device.createBuffer({
       label: 'ocean grid',
@@ -65,7 +65,7 @@ export class OceanSurface {
     const arr = { dim: '2d-array' };
     const layout = device.createBindGroupLayout({
       label: 'ocean surface',
-      entries: [...skyLayoutEntries(), texture(5, arr), texture(6, arr), texture(7, arr), sampler(8)],
+      entries: [...skyLayoutEntries(), texture(5, arr), texture(6, arr), texture(7, arr), sampler(8), texture(9, { type: 'unfilterable-float' })],
     });
     const module = shaderModule(device, 'ocean surface', surfaceWGSL);
     this.pipeline = device.createRenderPipeline({
@@ -95,6 +95,7 @@ export class OceanSurface {
         ocean.derivView,
         sky.envView,
         samplers.repeat,
+        terrain.heightView,
       ]),
     );
   }

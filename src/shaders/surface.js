@@ -1,4 +1,5 @@
 import { constants, globals, noise, atmosphere, transmittance, skyView, clouds } from './common.js';
+import { terrainFns } from './terrain.js';
 
 export const surfaceWGSL = /* wgsl */ `
 ${constants}
@@ -18,8 +19,16 @@ ${clouds}
 @group(0) @binding(6) var derivTex : texture_2d_array<f32>;
 @group(0) @binding(7) var envTex : texture_2d_array<f32>;
 @group(0) @binding(8) var repeatS : sampler;
+@group(0) @binding(9) var heightTex : texture_2d<f32>;
+
+${terrainFns}
 
 const TEX_SIZE : f32 = 256.0;
+
+// Waves lose height in shallow water; keep a little motion right up to the beach.
+fn shoreAttenuation(depth : f32) -> f32 {
+  return mix(0.12, 1.0, smoothstep(0.0, 18.0, depth));
+}
 
 struct VOut {
   @builtin(position) pos : vec4f,
@@ -39,6 +48,7 @@ fn vs(@location(0) offset : vec2f, @location(1) spacing : f32) -> VOut {
     let lod = clamp(log2(spacing / (L / TEX_SIZE)), 0.0, 8.0);
     d += textureSampleLevel(dispTex, repeatS, xz / L, c, lod).xyz;
   }
+  d *= shoreAttenuation(max(-terrainHeight(xz), 0.0));
   let world = vec3f(xz.x + d.x, d.y, xz.y + d.z);
   var o : VOut;
   o.rel = world - G.camPos;
@@ -81,6 +91,8 @@ fn fs(v : VOut) -> @location(0) vec4f {
     slope += dv.xy / max(vec2f(1.0) + dv.zw, vec2f(0.2));
     foam += ds.w * (1.0 - 0.25 * f32(c));
   }
+  let depth = max(-terrainHeight(v.xz), 0.0);
+  slope *= shoreAttenuation(depth);
   // Pixel footprint in metres drives roughness for unresolved waves.
   let footprint = max(length(dpdx(v.xz)), length(dpdy(v.xz)));
 
@@ -99,7 +111,8 @@ fn fs(v : VOut) -> @location(0) vec4f {
   let vh = max(dot(V, H), 0.0);
 
   let worldPos = v.rel + G.camPos;
-  let sunE = G.sunIntensity * sampleTransmittance(RG + 1e-5, L.y) * cloudShadow(worldPos);
+  let sunE = G.sunIntensity * sampleTransmittance(RG + 1e-5, L.y) * cloudShadow(worldPos) *
+             terrainShadow(vec3f(worldPos.x, max(worldPos.y, 0.0) + 0.3, worldPos.z), L);
 
   // Sky + cloud reflection from the environment map, blurred by roughness.
   var R = reflect(-V, n);
@@ -118,7 +131,10 @@ fn fs(v : VOut) -> @location(0) vec4f {
   let crest = max(v.height + 0.6, 0.0);
   let backlit = pow(saturate(dot(-V, L) * 0.5 + 0.5), 4.0) * pow(saturate(0.5 - 0.5 * dot(L, n)), 3.0);
   let sss = sunE * sssColor * (0.9 * crest * backlit + 0.015 * pow(nv, 2.0));
-  let body = deep * (amb + sunE * nl * 0.05) + sss;
+  var body = deep * (amb + sunE * nl * 0.05) + sss;
+  // Shallow water: the sandy bottom shows through as turquoise.
+  let shallow = vec3f(0.07, 0.21, 0.19) * (amb + sunE * max(L.y, 0.0) * 0.35) * 0.35;
+  body = mix(shallow, body, smoothstep(0.0, 9.0, depth));
 
   let F = fresnel(nv);
   var col = (1.0 - F) * body + F * refl + spec;
@@ -128,7 +144,11 @@ fn fs(v : VOut) -> @location(0) vec4f {
   let coarseNoise = fbm(v.xz * 0.15 - vec2f(0.0, G.time * 0.02), 3);
   let detail = mix(fineNoise * 0.6 + coarseNoise * 0.4, 0.5, saturate(footprint * 0.4));
   let foamMask = saturate(foam * G.foamAmount);
-  let coverage = saturate((foamMask - (1.0 - detail)) * 3.0 + foamMask * 0.15);
+  var coverage = saturate((foamMask - (1.0 - detail)) * 3.0 + foamMask * 0.15);
+  // Surf line: bands of foam rolling up the beach.
+  let surf = (1.0 - smoothstep(0.0, 1.8, depth)) * step(1e-3, depth);
+  let bands = 0.5 + 0.5 * sin(depth * 5.0 - G.time * 1.3 + fineNoise * 6.0);
+  coverage = max(coverage, saturate(surf * (bands * 0.8 + 0.3) * (fineNoise * 1.6 - 0.1)));
   let foamLit = vec3f(0.85) * (sunE * (nl * 0.6 + 0.4) / PI + amb);
   col = mix(col, foamLit, coverage);
 

@@ -8,7 +8,8 @@ A real-time WebGPU ocean renderer written from scratch with no engine and no dep
 - **Sky**: physically based atmosphere (Rayleigh, Mie and ozone) using a transmittance LUT and a per-frame sky-view LUT, plus a limb-darkened sun disk.
 - **Clouds**: a 2.5D cumulus layer with a light march toward the sun and approximate multiple scattering, a cirrus layer, aerial perspective and cloud shadows on the water.
 - **Post**: HDR, dual-filter bloom, ACES tonemapping and dithering.
-- **Free camera** on a camera-centred polar grid, with reverse-Z infinite projection.
+- **Walkable islands**: a procedural heightmap (4 km, 4 m/texel) with sand, grass and rock, soft heightfield shadows, and island shadows on the water. Waves shrink in shallow water, which shows as turquoise, and surf foam rolls up the beaches.
+- **Walk / fly camera**: walk with gravity, jumping, wading and swimming, or fly freely. Uses reverse-Z infinite projection, and the ocean is a camera-centred polar grid.
 
 ## Run
 
@@ -26,9 +27,11 @@ Then open the printed URL in a WebGPU browser (Chrome/Edge 113+, Safari 26+).
 | --- | --- |
 | Drag | Look |
 | WASD / arrows | Move |
-| Space/E, C/Q | Up / down |
-| Shift | Fast |
-| Wheel | Base speed |
+| F | Toggle walk / fly |
+| Space | Jump (walk) / up (fly) |
+| C/Q | Down (fly) |
+| Shift | Run / fly fast |
+| Wheel | Fly speed |
 | H | Hide UI |
 
 The panel adjusts the sun, wind and spectrum, choppiness, foam, clouds, exposure and bloom.
@@ -39,6 +42,7 @@ The panel adjusts the sun, wind and spectrum, choppiness, foam, clouds, exposure
 src/main.js       frame loop, globals uniform
 src/ocean.js      FFT simulation (spectrum, IFFT, assemble, mips)
 src/surface.js    polar grid + ocean shading pipeline
+src/terrain.js    island heightmap, terrain tiles, ground queries for walking
 src/sky.js        atmosphere LUTs, environment map, background sky
 src/post.js       bloom + tonemap
 src/shaders/      WGSL sources

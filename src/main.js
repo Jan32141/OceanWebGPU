@@ -4,6 +4,7 @@ import { MipGenerator } from './mipgen.js';
 import { OceanSimulation, CASCADE_LENGTHS } from './ocean.js';
 import { Sky } from './sky.js';
 import { OceanSurface } from './surface.js';
+import { Terrain } from './terrain.js';
 import { PostProcess } from './post.js';
 import { setupUI } from './ui.js';
 
@@ -52,9 +53,17 @@ async function init() {
   const mipgen = new MipGenerator(device);
   const ocean = new OceanSimulation(device, mipgen);
   const sky = new Sky(device, globalsBuffer, samplers, mipgen);
-  const surface = new OceanSurface(device, sky, ocean, samplers);
+  const terrain = new Terrain(device, sky);
+  const surface = new OceanSurface(device, sky, ocean, terrain, samplers);
   const post = new PostProcess(device, globalsBuffer, samplers, format);
   const camera = new FreeCamera(canvas);
+  camera.position = terrain.spawnPoint();
+  camera.position[1] += 1.7;
+  const modeEl = document.getElementById('mode');
+  const showMode = (walking) => (modeEl.textContent = walking ? 'walking' : 'flying');
+  camera.onModeChange = showMode;
+  showMode(camera.walking);
+  const groundAt = (x, z) => terrain.heightAt(x, z);
 
   const applySpectrum = (v) =>
     ocean.setSpectrum({ windSpeed: v.windSpeed, windDir: v.windDir * DEG, fetch: v.fetch * 1000, spread: v.spread });
@@ -75,7 +84,7 @@ async function init() {
     const simDt = dt * params.timeScale;
     simTime += simDt;
     cloudTime += dt * params.cloudSpeed;
-    camera.update(dt);
+    camera.update(dt, groundAt);
 
     const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     const w = Math.max(1, Math.floor(canvas.clientWidth * dpr));
@@ -131,6 +140,7 @@ async function init() {
         depthStoreOp: 'discard',
       },
     });
+    terrain.draw(scene);
     surface.draw(scene, parity);
     sky.draw(scene);
     scene.end();
