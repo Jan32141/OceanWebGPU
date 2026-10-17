@@ -1,0 +1,95 @@
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: #e8eef2;
+  font: 12px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  cursor: grab;
+  touch-action: none;
+}
+canvas:active { cursor: grabbing; }
+
+#hud {
+  position: fixed;
+  left: 12px;
+  bottom: 10px;
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  pointer-events: none;
+  text-shadow: 0 1px 2px #000;
+}
+#fps { font-variant-numeric: tabular-nums; font-weight: 600; }
+.hint { opacity: 0.65; }
+
+#panel {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  width: 260px;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  padding: 10px 12px;
+  background: rgba(10, 16, 22, 0.62);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+}
+#panel header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+#panel h1 { margin: 0; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; }
+#panel button {
+  background: none;
+  border: 0;
+  color: inherit;
+  font-size: 16px;
+  cursor: pointer;
+  width: 24px;
+}
+#panel.collapsed #controls { display: none; }
+
+#controls h2 {
+  margin: 12px 0 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+.row { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; margin: 4px 0; }
+.row label { opacity: 0.85; }
+.row output { font-variant-numeric: tabular-nums; opacity: 0.7; }
+.row input { grid-column: 1 / -1; width: 100%; margin: 2px 0 0; accent-color: #6fc3df; }
+
+body.no-ui #panel, body.no-ui #hud { display: none; }
+
+#error {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #0b1014;
+  font-size: 15px;
+  text-align: center;
+  white-space: pre-wrap;
+}
+#error[hidden] { display: none; }
+
+@media (max-width: 600px) {
+  #panel { width: calc(100vw - 24px); max-height: 45vh; }
+  .hint { display: none; }
+}

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ocean WebGPU</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <div id="hud">
+    <span id="fps">-- fps</span>
+    <span class="hint">drag to look · WASD move · Space/C up/down · Shift fast · wheel speed · H hide UI</span>
+  </div>
+
+  <aside id="panel">
+    <header>
+      <h1>Ocean</h1>
+      <button id="toggle" title="Collapse">–</button>
+    </header>
+    <div id="controls"></div>
+  </aside>
+
+  <div id="error" hidden></div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
